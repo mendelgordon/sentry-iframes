@@ -1,0 +1,53 @@
+<script>
+	window.sentryOnLoad = function () {
+		Sentry.init({
+			replaysSessionSampleRate: 1.0,
+			integrations: [
+				Sentry.replayIntegration({
+					maskAllText: false,
+					maskAllInputs: false,
+					blockAllMedia: false,
+					networkDetailAllowUrls: [window.location.origin],
+					mask: [
+						'.submissions-list',
+						'[name="x_card_num"]',
+						'[name="x_exp_date"]',
+						'[name="x_card_code"]',
+						'[name="x_exp_year"]',
+						'[name="x_exp_month"]',
+						'[name="ccnum"]',
+						'#book_listing',
+						'#donor_table',
+						'[data-field="password"]',
+						'[data-field="login"]',
+						'[data-field="extra1"]',
+						'#members',
+						'#subscribed',
+						'.individual-form-submissions',
+					],
+				}),
+			],
+			sendDefaultPii: true,
+		});
+
+		let sentryTrace, baggage;
+		const activeSpan = Sentry.getActiveSpan();
+
+		if (activeSpan) {
+			sentryTrace = Sentry.spanToTraceHeader(activeSpan);
+			baggage = Sentry.spanToBaggageHeader(activeSpan);
+		} else {
+			console.log("[Sentry] No active span found. Creating a new span for trace propagation.");
+			const propagationSpan = Sentry.startInactiveSpan({
+				op: 'propagation',
+				description: 'Span for propagating trace to iframe'
+			});
+			sentryTrace = Sentry.spanToTraceHeader(propagationSpan);
+			baggage = Sentry.spanToBaggageHeader(propagationSpan);
+		}
+
+		window.sentryTrace = sentryTrace;
+		window.baggage = baggage;
+	};
+</script>
+<script src="https://js.sentry-cdn.com/6194a47e86559da79779599de4de5d6d.min.js" crossorigin="anonymous"></script>

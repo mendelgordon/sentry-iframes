@@ -1,0 +1,47 @@
+<script src="https://browser.sentry-cdn.com/8.34.0/bundle.tracing.min.js" integrity="sha384-s2woYy8YkAR8PUwkUMYFxwhLLCBWBWkoGRSFmsfhgRSbva3eV7SMp3qZDNs/nAk0" crossorigin="anonymous"></script>
+<script>
+  window.getSentryTraceInfoFromParent = () => {
+    let currentWindow = window;
+    const maxLevels = 10;
+
+    for (let levelsChecked = 0; levelsChecked < maxLevels; levelsChecked++) {
+      try {
+        if (currentWindow === window.top) {
+          console.warn("[Sentry] Reached top window without finding trace info.");
+          break;
+        }
+        if (currentWindow.parent.sentryTrace) {
+          console.log(`[Sentry] Trace info found at level: ${levelsChecked}`);
+          return {
+            sentryTrace: currentWindow.parent.sentryTrace,
+            baggage: currentWindow.parent.baggage,
+          };
+        }
+        currentWindow = currentWindow.parent;
+      } catch (error) {
+        console.warn(`[Sentry] Access denied at level ${levelsChecked}: ${error.message}`);
+        break;
+      }
+    }
+
+    console.warn("[Sentry] Trace info not found in parent frames.");
+    return {};
+  };
+
+  window.sentryClient = Sentry.init({
+    dsn: "https://6194a47e86559da79779599de4de5d6d@o4507544106237952.ingest.us.sentry.io/4507544112136192",
+    integrations: [
+      Sentry.browserTracingIntegration({
+        instrumentPageLoad: false,
+      }),
+    ],
+  });
+
+  Sentry.startBrowserTracingPageLoadSpan(
+    sentryClient,
+    {
+      name: window.location.pathname,
+    },
+    getSentryTraceInfoFromParent(),
+  );
+</script>
